@@ -1,0 +1,23 @@
+{
+  "name": "timeseries",
+  "version": "1.0.0",
+  "description": "timeseries calculations written in Typescript",
+  "main": "timeseries.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tornord/timeseries.git"
+  },
+  "keywords": [
+    "timeseries",
+    "math"
+  ],
+  "author": "tornord <tornord@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tornord/timeseries/issues"
+  },
+  "homepage": "https://github.com/tornord/timeseries#readme"
+}
