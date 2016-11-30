@@ -148,6 +148,7 @@ export class TimeSeries {
         }
     }
 
+    // Returns value of item found by indexOf()
     latestValue(t: Date): number {
         let idx = this.indexOf(t);
         if (idx == -1)
@@ -155,6 +156,7 @@ export class TimeSeries {
         return this.items[idx].value;
     }
 
+    // Number of items per year rounded to one of the standard values 252 (banking daily), 52 (weekly), 12 (monthly), 4 (quarterly), 2 (semi annually), 1 (yearly)
     get periodicity() {
         if (this.count < 2)
             return 0;
@@ -187,30 +189,39 @@ export class TimeSeries {
         return Math.log(v);
     }
 
+    // By item value operators
+    // These functions / operators modifies each item value and returns a ref to the TimeSeries object itself (for method chaining)
+
+    // Log of each value (safe log, returns Number.NaN if non positive)
     log(): TimeSeries {
         this.items.forEach(d => d.value = this.safeLog(d.value));
         return this;
     }
 
+    // Exp of each value
     exp(): TimeSeries {
         this.items.forEach(d => d.value = Math.exp(d.value));
         return this;
     }
 
+    // Add v to each value
     add(v: number): TimeSeries {
         this.items.forEach(d => d.value += v);
         return this;
     }
 
+    // Mult v to each value
     mult(v: number): TimeSeries {
         this.items.forEach(d => { if (this.isFinite(d.value)) d.value *= v; });
         return this;
     }
 
+    // Negates each value
     neg(): TimeSeries {
         return this.mult(-1.0);
     }
 
+    // 1/x of each value, Number.NaN if == 0
     inverse(): TimeSeries {
         this.items.forEach(d => { if (this.isFinite(d.value) && (d.value != 0.0)) d.value = 1.0 / d.value; });
         return this;
@@ -229,6 +240,7 @@ export class TimeSeries {
         return this;
     }
 
+    // Returns a timeseries one item shorter and with item to item differences
     diff(): TimeSeries {
         return this.diffOperator(this.items, (v0: number, v1: number) => {
             if (this.isFinite(v0) && this.isFinite(v1))
@@ -237,6 +249,7 @@ export class TimeSeries {
         });
     }
 
+    // Returns a timeseries one item shorter and with item to item quotients (returns)
     return(): TimeSeries {
         return this.diffOperator(this.items, (v0: number, v1: number) => {
             if (this.isFinite(v0) && this.isFinite(v1) && (v0 != 0.0))
@@ -245,6 +258,7 @@ export class TimeSeries {
         });
     }
 
+    // Returns a timeseries one item shorter and with item to item log quotients (log returns)
     logReturn(): TimeSeries {
         return this.diffOperator(this.items, (v0: number, v1: number) => {
             if (this.isFinite(v0) && this.isFinite(v1) && (v0 != 0.0))
@@ -347,6 +361,7 @@ export class TimeSeries {
         return Math.exp(Math.log(this.endValue / this.startValue) / ((this.count - 1) / this.periodicity)) - 1;
     }
 
+    // Render functions. To be used in conjunction with D3. Should be lifted out from TimeSeries
     renderTable(d3: any, selector: string) {
         let heads: any = [];
         if (this.name)

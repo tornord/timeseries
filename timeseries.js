@@ -35,6 +35,7 @@ var TimeSeries = (function () {
     }
     TimeSeries.fromJsonTimeSeries = function (ts) {
         var res = new TimeSeries([]);
+        res.name = ts.key;
         for (var i in ts.timestamps) {
             var d = new Date(ts.timestamps[i].substr(0, 10));
             res.items.push(new TimeSeriesItem(d, ts.values[i]));

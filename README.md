@@ -43,7 +43,28 @@ Where:
 * startValue: First value
 * endValue: Last value
 * count: Number of items
+* periodicity: Number of items per year rounded to one of the standard values 252 (banking daily), 52 (weekly), 12 (monthly), 4 (quarterly), 2 (semi annually), 1 (yearly)
 
 # Search functions
 * indexOf(): Returns the last index in items, where timestamp >= item.timestamp
 * latestValue(): Returns value of item found by indexOf()
+
+# By item value operators
+These functions / operators modifies each item value and returns a ref to the TimeSeries object itself (for method chaining)
+* log(): Log of each value (safe log, returns Number.NaN if non positive)
+* exp(): Exp of each value
+* add(v): Add v to each value
+* mult(v): Mult v to each value
+* neg(): Negates each value
+* inverse(): 1/x of each value
+
+# Diff functions
+These functions returns a timeseries one item shorter and do not modify the object itself
+* diff(): Returns a timeseries one item shorter and with item to item differences
+* return(): Returns a timeseries one item shorter and with item to item quotients (returns)
+* logReturn(): Returns a timeseries one item shorter and with item to item log quotients (log returns)
+
+# Cumulative functions
+These functions returns a timeseries and do not modify the object itself
+* cumSum(): Returns a timeseries with cumulative sum values
+* cumProd(): Returns a timeseries with cumulative product values
