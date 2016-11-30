@@ -314,6 +314,15 @@ export class TimeSeries {
         return res;
     }
 
+    toString(): string {
+        var res = "";
+        if (this.name)
+            res += this.name + '\n';
+        if (this.items)
+            res += this.items.map(d => this.timestampFormatFun(d.timestamp) + " = " + this.valueFormatFun(d.value)).join('\n');
+        return res;
+    }
+
     private dateToString(d: Date) {
         return d.toISOString().substr(0, 10);
     }

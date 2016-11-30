@@ -323,6 +323,15 @@ var TimeSeries = (function () {
         enumerable: true,
         configurable: true
     });
+    TimeSeries.prototype.toString = function () {
+        var _this = this;
+        var res = "";
+        if (this.name)
+            res += this.name + '\n';
+        if (this.items)
+            res += this.items.map(function (d) { return _this.timestampFormatFun(d.timestamp) + " = " + _this.valueFormatFun(d.value); }).join('\n');
+        return res;
+    };
     TimeSeries.prototype.dateToString = function (d) {
         return d.toISOString().substr(0, 10);
     };
