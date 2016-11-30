@@ -24,7 +24,6 @@ Example
 ```
 
 Where:
-
 * key: String, any id or name, optional
 * timestamps: Array of date strings
 * values: Array of numbers
