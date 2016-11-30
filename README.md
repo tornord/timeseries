@@ -11,11 +11,9 @@ The data is stored in an array of TimeSeriesItems, where TimeSeriesItem is basic
 }
 ```
 
-By default the TimeSeries class imports json data of the following format, where 
+By default the TimeSeries class imports json data in the following format.
 
-* key: String, any id or name, optional
-* timestamps: Array of date strings
-* values: Array of numbers
+Example
 
 ```json
 {
@@ -24,3 +22,10 @@ By default the TimeSeries class imports json data of the following format, where
 	"values": [1.23, 1.27, 1.24, 1.31]
 }
 ```
+
+Where:
+
+* key: String, any id or name, optional
+* timestamps: Array of date strings
+* values: Array of numbers
+
