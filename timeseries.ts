@@ -21,6 +21,7 @@ export class TimeSeries {
 
     static fromJsonTimeSeries(ts: JsonTimeSeries): TimeSeries {
         let res = new TimeSeries([]);
+        res.name = ts.key;
         for (let i in ts.timestamps) {
             let d = new Date(ts.timestamps[i].substr(0, 10));
             res.items.push(new TimeSeriesItem(d, ts.values[i]));
@@ -35,6 +36,7 @@ export class TimeSeries {
     private ticksPerDay: number = 24 * 3600 * 1000;
     private ticksPerYear: number = 365.25 * this.ticksPerDay;
 
+    // Replaces all properties in the timeseries
     assign(name: string, items: TimeSeriesItem[], tFmtFun: (d: Date) => string, vFmtFun: (v: number) => string): TimeSeries {
         this.name = name;
         this.items = items;
@@ -49,10 +51,12 @@ export class TimeSeries {
         return items;
     }
 
+    // Creates a deep copy of the timeseries 
     get clone(): TimeSeries {
         return (new TimeSeries([])).assign(this.name, this.cloneItems, this.timestampFormatFun, this.valueFormatFun);
     }
 
+    // Like Array.slice create a sliced copy of the timeseries, from startDate to endDate
     range(start: Date, end: Date): TimeSeries {
         let res = new TimeSeries([]);
         res.assign(this.name, [], this.timestampFormatFun, this.valueFormatFun);
@@ -64,6 +68,7 @@ export class TimeSeries {
         return res;
     }
 
+    // Sorts TimeSeriesItems in ascending date order. Which many functions and operations require. Therefore items should always be kept in ascending date order.
     sort(): TimeSeries {
         this.items.sort((a: TimeSeriesItem, b: TimeSeriesItem) => a.timestamp.getTime() - b.timestamp.getTime());
         return this;
@@ -105,6 +110,7 @@ export class TimeSeries {
         return this.items.length;
     }
 
+    // Returns the last index in items, where timestamp >= item.timestamp
     indexOf(t: Date): number {
         if (this.items === undefined)
             return -1;
@@ -118,7 +124,7 @@ export class TimeSeries {
         else if (t >= vs[n - 1].timestamp)
             return n - 1;
 
-        if (n > 40) { //Binary search if >40 (otherwise it's no gain using it)     
+        if (n > 40) { //Binary search if >20 (otherwise it's no gain using it)     
             let hi = n - 1;
             let low = 0;
             if (t >= vs[hi].timestamp)
