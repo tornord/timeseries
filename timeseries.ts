@@ -124,7 +124,7 @@ export class TimeSeries {
         else if (t >= vs[n - 1].timestamp)
             return n - 1;
 
-        if (n > 40) { //Binary search if >20 (otherwise it's no gain using it)     
+        if (n > 20) { //Binary search if >20 (otherwise it's no gain using it)     
             let hi = n - 1;
             let low = 0;
             if (t >= vs[hi].timestamp)
