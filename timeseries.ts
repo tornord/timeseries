@@ -370,9 +370,9 @@ export class TimeSeries {
         return Math.exp(Math.log(this.endValue / this.startValue) / ((this.count - 1) / this.periodicity)) - 1;
     }
     
-    maxDrawdown(onlyMax: boolean): TimeSeries {
-        if (onlyMax === undefined)
-            onlyMax = false;
+    maxDrawdown(fullTimeSeries: boolean): TimeSeries {
+        if (fullTimeSeries === undefined)
+            fullTimeSeries = false;
         var max = -9e9;
         var maxindex: number;
         var resetmin: number;
@@ -394,10 +394,10 @@ export class TimeSeries {
                 startindex = maxindex;
                 endindex = i;
             }
-            if (onlyMax)
+            if (fullTimeSeries)
                 ts.push(new TimeSeriesItem(d.timestamp, drawdown));
         }
-        if (!onlyMax && (startindex > 0) && (endindex>0)) {
+        if (!fullTimeSeries && (startindex > 0) && (endindex>0)) {
             ts.push(this.items[startindex].clone);
             ts.push(this.items[endindex].clone);
         }

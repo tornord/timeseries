@@ -367,9 +367,9 @@ var TimeSeries = (function () {
         enumerable: true,
         configurable: true
     });
-    TimeSeries.prototype.maxDrawdown = function (onlyMax) {
-        if (onlyMax === undefined)
-            onlyMax = false;
+    TimeSeries.prototype.maxDrawdown = function (fullTimeSeries) {
+        if (fullTimeSeries === undefined)
+            fullTimeSeries = false;
         var max = -9e9;
         var maxindex;
         var resetmin;
@@ -391,10 +391,10 @@ var TimeSeries = (function () {
                 startindex = maxindex;
                 endindex = i;
             }
-            if (onlyMax)
+            if (fullTimeSeries)
                 ts.push(new TimeSeriesItem(d.timestamp, drawdown));
         }
-        if (!onlyMax && (startindex > 0) && (endindex > 0)) {
+        if (!fullTimeSeries && (startindex > 0) && (endindex > 0)) {
             ts.push(this.items[startindex].clone);
             ts.push(this.items[endindex].clone);
         }
