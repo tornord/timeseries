@@ -369,6 +369,42 @@ export class TimeSeries {
             return 0.0;
         return Math.exp(Math.log(this.endValue / this.startValue) / ((this.count - 1) / this.periodicity)) - 1;
     }
+    
+    maxDrawdown(onlyMax: boolean): TimeSeries {
+        if (onlyMax === undefined)
+            onlyMax = false;
+        var max = -9e9;
+        var maxindex: number;
+        var resetmin: number;
+        var drawdown: number;
+        var maxdrawdown = 0.0;
+        var startindex = -1;
+        var endindex = -1;
+        var ts: TimeSeriesItem[] = [];
+        for (var i = 0; i < this.count; i++) {
+            var d = this.items[i];
+            var v = d.value;
+            if (v > max) {
+                max = v;
+                maxindex = i;
+            }
+            drawdown = v / max - 1.0;
+            if (drawdown < maxdrawdown) {
+                maxdrawdown = drawdown;
+                startindex = maxindex;
+                endindex = i;
+            }
+            if (onlyMax)
+                ts.push(new TimeSeriesItem(d.timestamp, drawdown));
+        }
+        if (!onlyMax && (startindex > 0) && (endindex>0)) {
+            ts.push(this.items[startindex].clone);
+            ts.push(this.items[endindex].clone);
+        }
+        var res: TimeSeries = new TimeSeries(ts);
+        res.name = 'MAX DRAWDOWN';
+        return res;
+    }
 
     // Render functions. To be used in conjunction with D3. Should be lifted out from TimeSeries
     renderTable(d3: any, selector: string) {

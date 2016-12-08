@@ -148,7 +148,7 @@ var TimeSeries = (function () {
             return -1;
         else if (t >= vs[n - 1].timestamp)
             return n - 1;
-        if (n > 40) {
+        if (n > 20) {
             var hi = n - 1;
             var low = 0;
             if (t >= vs[hi].timestamp)
@@ -367,6 +367,41 @@ var TimeSeries = (function () {
         enumerable: true,
         configurable: true
     });
+    TimeSeries.prototype.maxDrawdown = function (onlyMax) {
+        if (onlyMax === undefined)
+            onlyMax = false;
+        var max = -9e9;
+        var maxindex;
+        var resetmin;
+        var drawdown;
+        var maxdrawdown = 0.0;
+        var startindex = -1;
+        var endindex = -1;
+        var ts = [];
+        for (var i = 0; i < this.count; i++) {
+            var d = this.items[i];
+            var v = d.value;
+            if (v > max) {
+                max = v;
+                maxindex = i;
+            }
+            drawdown = v / max - 1.0;
+            if (drawdown < maxdrawdown) {
+                maxdrawdown = drawdown;
+                startindex = maxindex;
+                endindex = i;
+            }
+            if (onlyMax)
+                ts.push(new TimeSeriesItem(d.timestamp, drawdown));
+        }
+        if (!onlyMax && (startindex > 0) && (endindex > 0)) {
+            ts.push(this.items[startindex].clone);
+            ts.push(this.items[endindex].clone);
+        }
+        var res = new TimeSeries(ts);
+        res.name = 'MAX DRAWDOWN';
+        return res;
+    };
     TimeSeries.prototype.renderTable = function (d3, selector) {
         var _this = this;
         var heads = [];
