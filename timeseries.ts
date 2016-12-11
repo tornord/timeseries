@@ -1,3 +1,12 @@
+import './daycountinterface';
+import 'seedrandom';
+
+declare global {
+    interface Math {
+        seedrandom(seed: string): void;
+    }
+}
+
 export class JsonTimeSeries {
     constructor(public key: string, public timestamps: string[], public values: number[]) {
     }
@@ -9,6 +18,89 @@ export class TimeSeriesItem {
 
     get clone(): TimeSeriesItem {
         return new TimeSeriesItem(this.timestamp, this.value);
+    }
+}
+
+export class DatePeriod {
+
+    constructor(public value: number, public periodicity: number) {
+    }
+
+    private static ticksPerDay: number = 24 * 3600 * 1000;
+
+    static calcValue(d: Date, periodicity: number): number {
+        if (periodicity <= 0)
+            return Number.NaN;
+        d = d.date();
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        if (periodicity <= 12) {
+            var m = d.monthNumber();
+            var p = 12 / periodicity;
+            return (m - (m % p)) / p;
+        }
+        var p = d.getTime() / DatePeriod.ticksPerDay;
+        if (periodicity == 52) {
+            p += 3;
+            return (p - (p % 7)) / 7;
+        }
+        if (periodicity == 252) {
+            if (!d.isBusinessDay())
+                d = d.nextBusinessDay();
+            p = d.getTime() / DatePeriod.ticksPerDay;
+            return p;
+        }
+        if (periodicity == 365)
+            return p;
+        return Number.NaN;
+    }
+
+    static fromDate(d: Date, periodicity: number) {
+        return new DatePeriod(DatePeriod.calcValue(d, periodicity), periodicity);
+    }
+
+    toDate(): Date {
+        if (!isFinite(this.value) || (this.periodicity <= 0))
+            return new Date(0);
+        if (this.periodicity <= 12) {
+            var p = 12 / this.periodicity;
+            return Date.fromYmd(1970, p * (this.value + 1) + 1, 1).addDays(-1);
+        }
+        var d: Date;
+        if (this.periodicity == 52) 
+            d = new Date((this.value * 7 + 3) * DatePeriod.ticksPerDay);
+        else
+            d = new Date(this.value * DatePeriod.ticksPerDay);
+        return d.date();
+    }
+
+    addPeriod(n: number): DatePeriod {
+        if (this.periodicity != 252) {
+            this.value += n;
+        }
+        else {
+            var d = this.toDate();
+            while (n > 0) {
+                d = d.nextBusinessDay();
+                n--;
+            }
+            while (n < 0) {
+                d = d.previousBusinessDay();
+                n++;
+            }
+            this.value = DatePeriod.calcValue(d, this.periodicity);
+        }
+        return this;
+    }
+
+    static range(start: Date, end: Date, periodicity: number): Date[] {
+        var dp = DatePeriod.fromDate(start, periodicity);
+        var dpe = DatePeriod.fromDate(end, periodicity);
+        var res: Date[] = [];
+        while (dp.value <= dpe.value) {
+            res.push(dp.toDate());
+            dp.addPeriod(1);
+        }
+        return res;
     }
 }
 
@@ -33,8 +125,9 @@ export class TimeSeries {
     timestampFormatFun: (d: Date) => string;
     valueFormatFun: (v: number) => string;
 
-    private ticksPerDay: number = 24 * 3600 * 1000;
-    private ticksPerYear: number = 365.25 * this.ticksPerDay;
+    private static ticksPerDay: number = 24 * 3600 * 1000;
+    private static ticksPerYear: number = 365.25 * TimeSeries.ticksPerDay;
+    private static maxDate: Date = new Date(9999999900000);
 
     // Replaces all properties in the timeseries
     assign(name: string, items: TimeSeriesItem[], tFmtFun: (d: Date) => string, vFmtFun: (v: number) => string): TimeSeries {
@@ -160,7 +253,7 @@ export class TimeSeries {
     get periodicity() {
         if (this.count < 2)
             return 0;
-        let dt = (this.end.getTime() - this.start.getTime()) / this.ticksPerDay / (this.count - 1);
+        let dt = (this.end.getTime() - this.start.getTime()) / TimeSeries.ticksPerDay / (this.count - 1);
         if (dt == 0.0)
             return 0;
         var peryear = 365.25 / dt;
@@ -330,7 +423,7 @@ export class TimeSeries {
     }
 
     private bondReturn(d0: TimeSeriesItem, d1: TimeSeriesItem, maturity: number, yearlyCoupons: boolean): number {
-        let dt = (d1.timestamp.getTime() - d0.timestamp.getTime()) / this.ticksPerYear;
+        let dt = (d1.timestamp.getTime() - d0.timestamp.getTime()) / TimeSeries.ticksPerYear;
         if (maturity <= dt)
             return Math.pow(1.0 + d0.value, dt);
         if (!yearlyCoupons)
@@ -525,7 +618,7 @@ export class TimeSeries {
             mode: 'lines',
             marker: {
                 color: color,
-                size: 8,
+                size: 7,
                 line: { width: 0 }
             },
             line: { width: 2.5 }
@@ -536,6 +629,82 @@ export class TimeSeries {
                 var k = keys[i];
                 res[k] = props[k];
             }
+        }
+        return res;
+    }
+
+    private static randn(): number {
+        var u = 1 - Math.random();
+        var v = 1 - Math.random();
+        return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
+
+    // Function generates a test random time series. 
+    public static generateRandomTimeSeries(name: string, start: Date, end: Date, onlybusinessdays: boolean, yearlyreturn: number,
+        yearlyvolatility: number, autocorrelation: number, seed: string): TimeSeries {
+        Math.seedrandom(seed);
+        var d = start;
+        var ds = new Array();
+        var v = 100.0;
+        var c0 = 0.0;
+        var n = 365.0;
+        if (onlybusinessdays) {
+            n = 252.0;
+            if (!d.isBusinessDay())
+                d = d.nextBusinessDay();
+        }
+        var sigma = yearlyvolatility / Math.sqrt(n);
+        var r = Math.pow(1.0 + yearlyreturn, 1.0 / n) - 1.0 - sigma * sigma / 2.0;
+        while (d <= end) {
+            ds.push(new TimeSeriesItem(d, Math.round(100 * v) / 100));
+            var c = sigma * TimeSeries.randn();
+            v *= 1.0 + r + c + autocorrelation * c0;
+            c0 = c;
+            if (onlybusinessdays)
+                d = d.nextBusinessDay();
+            else
+                d = d.addDays(1);
+        }
+        var res = new TimeSeries(ds);
+        res.name = name;
+        return res;
+    }
+
+    private date(idx: number): Date {
+        return this.items[idx].timestamp.date();
+    }
+
+    // Method = exact, latestOnlyWithinRange, latest, latestStartValueBeforeRange
+    public synchronize(mastertimestamps: Date[], method: string) {
+        var res = new TimeSeries(mastertimestamps.map(d => new TimeSeriesItem(d.date(), 0.0)));
+        res.name = this.name;
+        res.timestampFormatFun = this.timestampFormatFun;
+        res.valueFormatFun = this.valueFormatFun;
+        var n = this.count;
+        if (n == 0)
+            return res;
+        var j = 0;
+        var st = this.date(j);
+        var stn = ((j + 1) < n) ? this.date(j + 1) : TimeSeries.maxDate;
+        
+        for (var i = 0; i < res.count; i++) {
+            var item = res.items[i];
+            var t = item.timestamp.date();
+            while (stn.getTime() <= t.getTime()) {
+                st = stn;
+                j++;
+                stn = ((j + 1) < n) ? this.date(j + 1) : TimeSeries.maxDate;
+            }
+            var v = this.items[j].value;
+            var sv = Number.NaN;
+            if ((st.getTime() > t.getTime()) && (method == 'latestStartValueBeforeRange'))
+                sv = v;
+            else if ((st.getTime() == t.getTime()) || ((method != 'exact') && (st.getTime() < t.getTime())))
+                sv = (j < n) ? v : Number.NaN;
+            if (method == 'latestOnlyWithinRange')
+                if ((st.getTime() < t.getTime()) && (stn.getTime() == TimeSeries.maxDate.getTime()))
+                    sv = Number.NaN;
+            item.value = sv;
         }
         return res;
     }

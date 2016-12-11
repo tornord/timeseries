@@ -1,4 +1,6 @@
 "use strict";
+require('./daycountinterface');
+require('seedrandom');
 var JsonTimeSeries = (function () {
     function JsonTimeSeries(key, timestamps, values) {
         this.key = key;
@@ -23,12 +25,89 @@ var TimeSeriesItem = (function () {
     return TimeSeriesItem;
 }());
 exports.TimeSeriesItem = TimeSeriesItem;
+var DatePeriod = (function () {
+    function DatePeriod(value, periodicity) {
+        this.value = value;
+        this.periodicity = periodicity;
+    }
+    DatePeriod.calcValue = function (d, periodicity) {
+        if (periodicity <= 0)
+            return Number.NaN;
+        d = d.date();
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        if (periodicity <= 12) {
+            var m = d.monthNumber();
+            var p = 12 / periodicity;
+            return (m - (m % p)) / p;
+        }
+        var p = d.getTime() / DatePeriod.ticksPerDay;
+        if (periodicity == 52) {
+            p += 3;
+            return (p - (p % 7)) / 7;
+        }
+        if (periodicity == 252) {
+            if (!d.isBusinessDay())
+                d = d.nextBusinessDay();
+            p = d.getTime() / DatePeriod.ticksPerDay;
+            return p;
+        }
+        if (periodicity == 365)
+            return p;
+        return Number.NaN;
+    };
+    DatePeriod.fromDate = function (d, periodicity) {
+        return new DatePeriod(DatePeriod.calcValue(d, periodicity), periodicity);
+    };
+    DatePeriod.prototype.toDate = function () {
+        if (!isFinite(this.value) || (this.periodicity <= 0))
+            return new Date(0);
+        if (this.periodicity <= 12) {
+            var p = 12 / this.periodicity;
+            return Date.fromYmd(1970, p * (this.value + 1) + 1, 1).addDays(-1);
+        }
+        var d;
+        if (this.periodicity == 52)
+            d = new Date((this.value * 7 + 3) * DatePeriod.ticksPerDay);
+        else
+            d = new Date(this.value * DatePeriod.ticksPerDay);
+        return d.date();
+    };
+    DatePeriod.prototype.addPeriod = function (n) {
+        if (this.periodicity != 252) {
+            this.value += n;
+        }
+        else {
+            var d = this.toDate();
+            while (n > 0) {
+                d = d.nextBusinessDay();
+                n--;
+            }
+            while (n < 0) {
+                d = d.previousBusinessDay();
+                n++;
+            }
+            this.value = DatePeriod.calcValue(d, this.periodicity);
+        }
+        return this;
+    };
+    DatePeriod.range = function (start, end, periodicity) {
+        var dp = DatePeriod.fromDate(start, periodicity);
+        var dpe = DatePeriod.fromDate(end, periodicity);
+        var res = [];
+        while (dp.value <= dpe.value) {
+            res.push(dp.toDate());
+            dp.addPeriod(1);
+        }
+        return res;
+    };
+    DatePeriod.ticksPerDay = 24 * 3600 * 1000;
+    return DatePeriod;
+}());
+exports.DatePeriod = DatePeriod;
 var TimeSeries = (function () {
     function TimeSeries(items) {
         if (items === void 0) { items = []; }
         this.items = items;
-        this.ticksPerDay = 24 * 3600 * 1000;
-        this.ticksPerYear = 365.25 * this.ticksPerDay;
         this.name = null;
         this.timestampFormatFun = this.dateToString;
         this.valueFormatFun = function (d) { return d.toFixed(2); };
@@ -181,7 +260,7 @@ var TimeSeries = (function () {
         get: function () {
             if (this.count < 2)
                 return 0;
-            var dt = (this.end.getTime() - this.start.getTime()) / this.ticksPerDay / (this.count - 1);
+            var dt = (this.end.getTime() - this.start.getTime()) / TimeSeries.ticksPerDay / (this.count - 1);
             if (dt == 0.0)
                 return 0;
             var peryear = 365.25 / dt;
@@ -338,7 +417,7 @@ var TimeSeries = (function () {
         return d.toISOString().substring(0, 10);
     };
     TimeSeries.prototype.bondReturn = function (d0, d1, maturity, yearlyCoupons) {
-        var dt = (d1.timestamp.getTime() - d0.timestamp.getTime()) / this.ticksPerYear;
+        var dt = (d1.timestamp.getTime() - d0.timestamp.getTime()) / TimeSeries.ticksPerYear;
         if (maturity <= dt)
             return Math.pow(1.0 + d0.value, dt);
         if (!yearlyCoupons)
@@ -503,7 +582,7 @@ var TimeSeries = (function () {
             mode: 'lines',
             marker: {
                 color: color,
-                size: 8,
+                size: 7,
                 line: { width: 0 }
             },
             line: { width: 2.5 }
@@ -514,6 +593,74 @@ var TimeSeries = (function () {
                 var k = keys[i];
                 res[k] = props[k];
             }
+        }
+        return res;
+    };
+    TimeSeries.randn = function () {
+        var u = 1 - Math.random();
+        var v = 1 - Math.random();
+        return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    };
+    TimeSeries.generateRandomTimeSeries = function (name, start, end, onlybusinessdays, yearlyreturn, yearlyvolatility, autocorrelation, seed) {
+        Math.seedrandom(seed);
+        var d = start;
+        var ds = new Array();
+        var v = 100.0;
+        var c0 = 0.0;
+        var n = 365.0;
+        if (onlybusinessdays) {
+            n = 252.0;
+            if (!d.isBusinessDay())
+                d = d.nextBusinessDay();
+        }
+        var sigma = yearlyvolatility / Math.sqrt(n);
+        var r = Math.pow(1.0 + yearlyreturn, 1.0 / n) - 1.0 - sigma * sigma / 2.0;
+        while (d <= end) {
+            ds.push(new TimeSeriesItem(d, Math.round(100 * v) / 100));
+            var c = sigma * TimeSeries.randn();
+            v *= 1.0 + r + c + autocorrelation * c0;
+            c0 = c;
+            if (onlybusinessdays)
+                d = d.nextBusinessDay();
+            else
+                d = d.addDays(1);
+        }
+        var res = new TimeSeries(ds);
+        res.name = name;
+        return res;
+    };
+    TimeSeries.prototype.date = function (idx) {
+        return this.items[idx].timestamp.date();
+    };
+    TimeSeries.prototype.synchronize = function (mastertimestamps, method) {
+        var res = new TimeSeries(mastertimestamps.map(function (d) { return new TimeSeriesItem(d.date(), 0.0); }));
+        res.name = this.name;
+        res.timestampFormatFun = this.timestampFormatFun;
+        res.valueFormatFun = this.valueFormatFun;
+        var n = this.count;
+        if (n == 0)
+            return res;
+        var j = 0;
+        var st = this.date(j);
+        var stn = ((j + 1) < n) ? this.date(j + 1) : TimeSeries.maxDate;
+        for (var i = 0; i < res.count; i++) {
+            var item = res.items[i];
+            var t = item.timestamp.date();
+            while (stn.getTime() <= t.getTime()) {
+                st = stn;
+                j++;
+                stn = ((j + 1) < n) ? this.date(j + 1) : TimeSeries.maxDate;
+            }
+            var v = this.items[j].value;
+            var sv = Number.NaN;
+            if ((st.getTime() > t.getTime()) && (method == 'latestStartValueBeforeRange'))
+                sv = v;
+            else if ((st.getTime() == t.getTime()) || ((method != 'exact') && (st.getTime() < t.getTime())))
+                sv = (j < n) ? v : Number.NaN;
+            if (method == 'latestOnlyWithinRange')
+                if ((st.getTime() < t.getTime()) && (stn.getTime() == TimeSeries.maxDate.getTime()))
+                    sv = Number.NaN;
+            item.value = sv;
         }
         return res;
     };
@@ -621,6 +768,9 @@ var TimeSeries = (function () {
             .text(function (d) { return monthValueFormatFun(d); });
         sel.exit().remove();
     };
+    TimeSeries.ticksPerDay = 24 * 3600 * 1000;
+    TimeSeries.ticksPerYear = 365.25 * TimeSeries.ticksPerDay;
+    TimeSeries.maxDate = new Date(9999999900000);
     TimeSeries.weightedTimeSeries = function (ws, tss) {
         var vs = [];
         for (var i in tss[0].items) {
