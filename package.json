@@ -1,6 +1,6 @@
 {
   "name": "timeseries-ts",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "timeseries calculations written in Typescript",
   "main": "timeseries.js",
   "scripts": {
@@ -19,5 +19,8 @@
   "bugs": {
     "url": "https://github.com/tornord/timeseries/issues"
   },
-  "homepage": "https://github.com/tornord/timeseries#readme"
+  "homepage": "https://github.com/tornord/timeseries#readme",
+  "dependencies": {
+    "seedrandom": "^2.4.2"
+  }
 }
