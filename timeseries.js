@@ -1,6 +1,6 @@
 "use strict";
-var daycount_1 = require("daycount");
-require('seedrandom');
+require("daycount");
+require("seedrandom");
 var JsonTimeSeries = (function () {
     function JsonTimeSeries(key, timestamps, values) {
         this.key = key;
@@ -60,16 +60,16 @@ var DatePeriod = (function () {
     };
     DatePeriod.prototype.toDate = function () {
         if (!isFinite(this.value) || (this.periodicity <= 0))
-            return new daycount_1.Date(0);
+            return new Date(0);
         if (this.periodicity <= 12) {
             var p = 12 / this.periodicity;
-            return daycount_1.Date.fromYmd(1970, p * (this.value + 1) + 1, 1).addDays(-1);
+            return Date.fromYmd(1970, p * (this.value + 1) + 1, 1).addDays(-1);
         }
         var d;
         if (this.periodicity == 52)
-            d = new daycount_1.Date((this.value * 7 + 3) * DatePeriod.ticksPerDay);
+            d = new Date((this.value * 7 + 3) * DatePeriod.ticksPerDay);
         else
-            d = new daycount_1.Date(this.value * DatePeriod.ticksPerDay);
+            d = new Date(this.value * DatePeriod.ticksPerDay);
         return d.date();
     };
     DatePeriod.prototype.addPeriod = function (n) {
@@ -116,7 +116,7 @@ var TimeSeries = (function () {
         var res = new TimeSeries([]);
         res.name = ts.key;
         for (var i in ts.timestamps) {
-            var d = new daycount_1.Date(ts.timestamps[i].substr(0, 10));
+            var d = new Date(ts.timestamps[i].substr(0, 10));
             res.items.push(new TimeSeriesItem(d, ts.values[i]));
         }
         return res;
@@ -412,7 +412,7 @@ var TimeSeries = (function () {
         return res;
     };
     TimeSeries.prototype.dateToString = function (d) {
-        d = new daycount_1.Date(d.getTime());
+        d = new Date(d.getTime());
         d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
         return d.toISOString().substring(0, 10);
     };
@@ -770,7 +770,7 @@ var TimeSeries = (function () {
     };
     TimeSeries.ticksPerDay = 24 * 3600 * 1000;
     TimeSeries.ticksPerYear = 365.25 * TimeSeries.ticksPerDay;
-    TimeSeries.maxDate = new daycount_1.Date(9999999900000);
+    TimeSeries.maxDate = new Date(9999999900000);
     TimeSeries.weightedTimeSeries = function (ws, tss) {
         var vs = [];
         for (var i in tss[0].items) {

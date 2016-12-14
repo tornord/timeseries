@@ -1,4 +1,4 @@
-import { Date } from "daycount";
+import "daycount";
 import "seedrandom";
 
 declare global {
