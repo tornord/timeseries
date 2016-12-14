@@ -1,5 +1,5 @@
-import './daycountinterface';
-import 'seedrandom';
+import { Date } from "daycount";
+import "seedrandom";
 
 declare global {
     interface Math {
@@ -473,8 +473,8 @@ export class TimeSeries {
         var resetmin: number;
         var drawdown: number;
         var maxdrawdown = 0.0;
-        var startindex = -1;
-        var endindex = -1;
+        var startindex = 0;
+        var endindex = 0;
         var ts: TimeSeriesItem[] = [];
         for (var i = 0; i < this.count; i++) {
             var d = this.items[i];

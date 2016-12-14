@@ -20,15 +20,12 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
   <ItemGroup>
     <Content Include=".gitignore" />
-    <Content Include="daycountinterface.js.map" />
     <Content Include="LICENSE" />
     <Content Include="package.json" />
     <Content Include="timeseries.js.map" />
     <Content Include="tsconfig.json" />
     <Content Include="README.md" />
-    <TypeScriptCompile Include="daycountinterface.ts" />
     <TypeScriptCompile Include="timeseries.ts" />
-    <Compile Include="daycountinterface.js" />
     <Compile Include="test.js" />
     <Compile Include="timeseries.js" />
   </ItemGroup>
