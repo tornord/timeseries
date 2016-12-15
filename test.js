@@ -3,8 +3,18 @@ var DatePeriod = require('./timeseries.js').DatePeriod;
 require('seedrandom');
 require('daycount');
 
-var json = '{ "key": "", "timestamps": ["2016-08-31", "2016-09-30", "2016-10-31", "2016-11-30"], "values": [1.23, 1.27, 1.24, 1.31] }';
+Number.prototype.toPercent = function (decimals) {
+    if (!isFinite(this) || (Math.abs(this) < 1e-6))
+        return '';
+    return (100 * this).toFixed(decimals).replace('.', ',') + '%';
+}
+
+
+var json = '{ "key": "", "timestamps": ["2016-08-31", "2016-09-30", "2016-10-31", "2016-11-30"], "values": [1.26, 1.27, 1.28, 1.29] }';
 var ts = TimeSeries.fromJsonTimeSeries(JSON.parse(json));
+
+var md = ts.maxDrawdown(false);
+console.log((md.values[1] / md.values[0] - 1).toPercent(1) + ', ' + md.timestamps[0].ymd() + ' - ' + md.timestamps[1].ymd());
 
 //console.log([3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map(d => DatePeriod.fromDate(Date.fromYmd(2016, 12, d), 52).value.toFixed(0)).join(', '));
 //var test = (new Date()).date().addDays(0).date().ymdhm();

@@ -492,7 +492,7 @@ export class TimeSeries {
             if (fullTimeSeries)
                 ts.push(new TimeSeriesItem(d.timestamp, drawdown));
         }
-        if (!fullTimeSeries && (startindex > 0) && (endindex>0)) {
+        if (!fullTimeSeries && (startindex >= 0) && (endindex>=0)) {
             ts.push(this.items[startindex].clone);
             ts.push(this.items[endindex].clone);
         }
