@@ -1,4 +1,7 @@
 "use strict";
+if (require === undefined)
+    require = () => {};
+
 require("daycount");
 require("seedrandom");
 class JsonTimeSeries {
