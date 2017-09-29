@@ -617,12 +617,13 @@ export class TimeSeries {
             type: 'scatter',
             mode: 'lines',
             marker: {
-                color: color,
                 size: 7,
                 line: { width: 0 }
             },
             line: { width: 2.5 }
         };
+        if (color !== undefined)
+            res.marker.color = color;
         if (props !== undefined) {
             var keys = Object.keys(props);
             for (var i = 0; i < keys.length; i++) {
