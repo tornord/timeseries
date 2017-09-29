@@ -1,6 +1,6 @@
 {
   "name": "timeseries-ts",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "timeseries calculations written in Typescript",
   "main": "timeseries.js",
   "scripts": {
