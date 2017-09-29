@@ -27,6 +27,9 @@
     <Content Include="README.md" />
     <TypeScriptCompile Include="timeseries.ts" />
     <Compile Include="test.js" />
+    <Compile Include="test2.js">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="timeseries.js" />
   </ItemGroup>
   <ItemGroup />

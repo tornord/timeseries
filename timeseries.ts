@@ -7,14 +7,35 @@ declare global {
     }
 }
 
+Object.prototype.getName = function () {
+    var funcNameRegex = /function (.{1,})\(/;
+    var results = (funcNameRegex).exec((this).constructor.toString());
+    return (results && results.length > 1) ? results[1] : "";
+};
+
 export class JsonTimeSeries {
     constructor(public key: string, public timestamps: string[], public values: number[]) {
     }
 }
 
 export class TimeSeriesItem {
-    constructor(public timestamp: Date, public value: number) {
+    constructor(timestamp: any, value: number = undefined) {
+        var t = timestamp;
+        this.value = value;
+        if (typeof t == "object") {
+            if (t.getName() != "Date") {
+                t = timestamp.timestamp;
+                this.value = timestamp.value;
+            }
+        }
+        if (typeof t == "string")
+            if (/\d{4}-[01]\d-[0-3]\d(?:T[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z))?/.test(t))
+                t = new Date(t);
+        this.timestamp = t;
     }
+
+    timestamp: Date;
+    value: number;
 
     get clone(): TimeSeriesItem {
         return new TimeSeriesItem(this.timestamp, this.value);
@@ -106,6 +127,7 @@ export class DatePeriod {
 
 export class TimeSeries {
     constructor(public items: TimeSeriesItem[] = []) {
+        this.items = items.map(d => (d.getName() == "TimeSeriesItem") ? d : new TimeSeriesItem(d));
         this.name = null;
         this.timestampFormatFun = this.dateToString;
         this.valueFormatFun = (d: number) => d.toFixed(2);
@@ -114,10 +136,11 @@ export class TimeSeries {
     static fromJsonTimeSeries(ts: JsonTimeSeries): TimeSeries {
         let res = new TimeSeries([]);
         res.name = ts.key;
-        for (let i in ts.timestamps) {
-            let d = new Date(ts.timestamps[i].substr(0, 10));
-            res.items.push(new TimeSeriesItem(d, ts.values[i]));
-        }
+        res.items = ts.timestamps.map((d, i) => new TimeSeriesItem(d, ts.values[i]));
+        //for (let i in ts.timestamps) {
+        //    //let d = new Date(ts.timestamps[i].substr(0, 10));
+        //    res.items.push(new TimeSeriesItem(ts.timestamps[i], ts.values[i]));
+        //}
         return res;
     }
 
@@ -464,7 +487,7 @@ export class TimeSeries {
             return 0.0;
         return Math.exp(Math.log(this.endValue / this.startValue) / ((this.count - 1) / this.periodicity)) - 1;
     }
-    
+
     maxDrawdown(fullTimeSeries: boolean): TimeSeries {
         if (fullTimeSeries === undefined)
             fullTimeSeries = false;
@@ -493,8 +516,8 @@ export class TimeSeries {
                 ts.push(new TimeSeriesItem(d.timestamp, drawdown));
         }
         if (!fullTimeSeries && (startindex >= 0) && (endindex>=0)) {
-            ts.push(this.items[startindex].clone);
-            ts.push(this.items[endindex].clone);
+            ts.push(new TimeSeriesItem(this.items[startindex]));
+            ts.push(new TimeSeriesItem(this.items[endindex]));
         }
         var res: TimeSeries = new TimeSeries(ts);
         res.name = this.name;
