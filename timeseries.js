@@ -1,14 +1,6 @@
 "use strict";
-if (require === undefined)
-    require = () => {};
-
 require("daycount");
 require("seedrandom");
-Object.prototype.getName = function () {
-    var funcNameRegex = /function (.{1,})\(/;
-    var results = (funcNameRegex).exec((this).constructor.toString());
-    return (results && results.length > 1) ? results[1] : "";
-};
 class JsonTimeSeries {
     constructor(key, timestamps, values) {
         this.key = key;
@@ -22,7 +14,7 @@ class TimeSeriesItem {
         var t = timestamp;
         this.value = value;
         if (typeof t == "object") {
-            if (t.getName() != "Date") {
+            if (TimeSeries.getClassName(t) != "Date") {
                 t = timestamp.timestamp;
                 this.value = timestamp.value;
             }
@@ -118,10 +110,15 @@ exports.DatePeriod = DatePeriod;
 class TimeSeries {
     constructor(items = []) {
         this.items = items;
-        this.items = items.map(d => (d.getName() == "TimeSeriesItem") ? d : new TimeSeriesItem(d));
+        this.items = items.map(d => (TimeSeries.getClassName(d) == "TimeSeriesItem") ? d : new TimeSeriesItem(d));
         this.name = null;
         this.timestampFormatFun = this.dateToString;
         this.valueFormatFun = (d) => d.toFixed(2);
+    }
+    static getClassName(obj) {
+        var funcNameRegex = /function (.{1,})\(/;
+        var results = (funcNameRegex).exec((obj).constructor.toString());
+        return (results && results.length > 1) ? results[1] : "";
     }
     static fromJsonTimeSeries(ts) {
         let res = new TimeSeries([]);
